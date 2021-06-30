@@ -83,18 +83,7 @@ else
   Q = @
 endif
 
-buildconfig = ../../../.buildconfig
-ifeq ($(buildconfig), $(wildcard $(buildconfig)))
-	LICHEE_BUSSINESS=$(shell cat $(buildconfig) | grep -w "LICHEE_BUSSINESS" | awk -F= '{printf $$2}')
-	LICHEE_CHIP_CONFIG_DIR=$(shell cat $(buildconfig) | grep -w "LICHEE_CHIP_CONFIG_DIR" | awk -F= '{printf $$2}')
-	LICHEE_ARCH=$(shell cat $(buildconfig) | grep -w "LICHEE_ARCH" | awk -F= '{printf $$2}')
-	LICHEE_IC=$(shell cat $(buildconfig) | grep -w "LICHEE_IC" | awk -F= '{printf $$2}')
-	LICHEE_CHIP=$(shell cat $(buildconfig) | grep -w "LICHEE_CHIP" | awk -F= '{printf $$2}')
-	LICHEE_BOARD=$(shell cat $(buildconfig) | grep -w "LICHEE_BOARD" | awk -F= '{printf $$2}')
-	LICHEE_PLAT_OUT=$(shell cat $(buildconfig) | grep -w "LICHEE_PLAT_OUT" | awk -F= '{printf $$2}')
-	LICHEE_BOARD_CONFIG_DIR=$(shell cat $(buildconfig) | grep -w "LICHEE_BOARD_CONFIG_DIR" | awk -F= '{printf $$2}')
-	export LICHEE_BUSSINESS LICHEE_CHIP_CONFIG_DIR LICHEE_IC LICHEE_ARCH LICHEE_CHIP LICHEE_BOARD LICHEE_PLAT_OUT LICHEE_BOARD_CONFIG_DIR
-endif
+LICHEE_BOARD_CONFIG_DIR=$(objtree)
 
 # If the user is running make -s (silent mode), suppress echoing of
 # commands
@@ -265,34 +254,14 @@ ifeq (x$(config_check), xyes)
 endif
 endif
 
-#########################################################################
-RISCV_PATH=riscv64-linux-x86_64-20200528
-riscv_toolchain_check=$(shell if [ ! -d ../tools/toolchain/$(RISCV_PATH) ]; then echo yes; else echo no; fi;)
-ifeq (x$(riscv_toolchain_check), xyes)
-$(info Prepare riscv toolchain ...);
-$(shell mkdir -p ../tools/toolchain/$(RISCV_PATH) || exit 1)
-$(shell tar --strip-components=1 -xf ../tools/toolchain/$(RISCV_PATH).tar.xz -C ../tools/toolchain/$(RISCV_PATH) || exit 1)
-endif
-arm_toolchain_check=$(shell if [ ! -d ../tools/toolchain/gcc-linaro-7.2.1-2017.11-x86_64_arm-linux-gnueabi ]; then echo yes; else echo no; fi;)
-ifeq (x$(arm_toolchain_check), xyes)
-$(info Prepare arm toolchain ...);
-$(shell mkdir -p ../tools/toolchain/gcc-linaro-7.2.1-2017.11-x86_64_arm-linux-gnueabi || exit 1)
-$(shell tar --strip-components=1 -xf ../tools/toolchain/gcc-linaro-7.2.1-2017.11-x86_64_arm-linux-gnueabi.tar.xz -C ../tools/toolchain/gcc-linaro-7.2.1-2017.11-x86_64_arm-linux-gnueabi || exit 1)
-endif
-
-
 ifeq (x$(CONFIG_RISCV), xy)
-CROSS_COMPILE := $(srctree)/../tools/toolchain/$(RISCV_PATH)/bin/riscv64-unknown-linux-gnu-
-DTS_PATH := $(PWD)/arch/riscv/dts
+DTS_PATH := $(objtree)/arch/riscv/dts
 endif
 
 ifeq (x$(CONFIG_ARM), xy)
-CROSS_COMPILE := $(srctree)/../tools/toolchain/gcc-linaro-7.2.1-2017.11-x86_64_arm-linux-gnueabi/bin/arm-linux-gnueabi-
-DTS_PATH := $(PWD)/arch/arm/dts
+DTS_PATH := $(objtree)/arch/arm/dts
 endif
 
-CROSS_COMPILE ?= $(srctree)/../tools/toolchain/gcc-linaro-7.2.1-2017.11-x86_64_arm-linux-gnueabi/bin/arm-linux-gnueabi-
-DTS_PATH ?= $(PWD)/arch/arm/dts
 
 #######################################################################
 # set default to nothing for native builds
@@ -1000,7 +969,6 @@ endif
 	$(Q)$(MAKE) $(build)=dts dtbs
 	$(DTC) $(DTS_WARNNING_SKIP) -I dtb -O dts  $(DTS_PATH)/$(CONFIG_DEFAULT_DEVICE_TREE).dtb > u-boot-dtb.dts
 
-
 quiet_cmd_copy = COPY    $@
       cmd_copy = cp $< $@
 
@@ -1033,29 +1001,6 @@ TARGET_BIN_DIR ?= device/config/chips/$(TARGET_PLATFORM)/bin
 
 u-boot-$(CONFIG_SYS_CONFIG_NAME).bin:   u-boot.bin
 	@cp -v $<    $@
-ifeq ($(CONFIG_SUNXI_NOR_IMG),y)
-ifeq ($(TARGET_BUILD_VARIANT),tina)
-	@cp -v $@ $(objtree)/../../../$(TARGET_BIN_DIR)/u-boot-spinor-$(CONFIG_SYS_CONFIG_NAME).bin;
-else
-	@-if [ "x$(LICHEE_BUSSINESS)" != "x" ];then \
-		cp -v $@ $(LICHEE_CHIP_CONFIG_DIR)/$(LICHEE_BUSSINESS)/bin/u-boot-spinor-$(CONFIG_SYS_CONFIG_NAME).bin; \
-	else \
-		cp -v $@ $(LICHEE_CHIP_CONFIG_DIR)/bin/u-boot-spinor-$(CONFIG_SYS_CONFIG_NAME).bin;\
-	fi
-	@-cp -v $@ $(LICHEE_PLAT_OUT)/u-boot-spinor-$(CONFIG_SYS_CONFIG_NAME).bin;
-endif
-else
-ifeq ($(TARGET_BUILD_VARIANT),tina)
-	@cp -v $@ $(objtree)/../../../$(TARGET_BIN_DIR)/$@
-else
-	@-if [ "x$(LICHEE_BUSSINESS)" != "x" ];then\
-		cp -v $@ $(LICHEE_CHIP_CONFIG_DIR)/$(LICHEE_BUSSINESS)/bin/$@; \
-	else \
-		cp -v $@ $(LICHEE_CHIP_CONFIG_DIR)/bin/$@; \
-	fi
-	@-cp -v $@ $(LICHEE_PLAT_OUT)/$@;
-endif
-endif
 
 %.imx: %.bin
 	$(Q)$(MAKE) $(build)=arch/arm/mach-imx $@
