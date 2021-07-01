@@ -963,7 +963,8 @@ else
 ifeq (x$(BOARD_DTS_EXIST),xyes)
 	@-cp -v $(DTS_PATH)/$(LICHEE_IC)-$(LICHEE_BOARD)-board.dts $(DTS_PATH)/.board-uboot.dts
 else
-	@-cp -v $(DTS_PATH)/$(CONFIG_SYS_CONFIG_NAME)-common-board.dts $(DTS_PATH)/.board-uboot.dts
+#	@-cp -v $(DTS_PATH)/$(CONFIG_SYS_CONFIG_NAME)-common-board.dts $(DTS_PATH)/.board-uboot.dts
+	@-cp -v $(DTS_PATH)/uboot-board.dts $(DTS_PATH)/.board-uboot.dts
 endif
 endif
 	$(Q)$(MAKE) $(build)=dts dtbs
